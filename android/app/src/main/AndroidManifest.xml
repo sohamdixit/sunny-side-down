@@ -20,13 +20,6 @@
             </intent-filter>
         </activity>
 
-        <!-- REQUIRED by the Google Mobile Ads SDK: the app crashes on launch if
-             this is absent or malformed. Currently Google's TEST App ID -
-             replace with the real one from AdMob before a production release. -->
-        <meta-data
-            android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713" />
-
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

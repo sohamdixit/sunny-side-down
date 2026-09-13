@@ -12,7 +12,6 @@ import { progressAlong } from '../lib/geo';
 import { addCommute } from '../lib/store';
 import { watchPosition, clearWatch, type GeoFailure, type WatchHandle } from '../lib/location';
 import { fmtTime, hhmm } from '../lib/time';
-import { showBanner, hideBanner, bannerPossible } from '../lib/ads';
 import { BackIcon, SunIcon, SwapIcon, ClockIcon, CheckBadge, WheelIcon } from '../icons';
 
 /** Kept plain on purpose: this is the answer, it should read at a glance. */
@@ -82,15 +81,6 @@ export function Result({ trip, driveSide, onFlipDriveSide, onBack }: Props) {
     return () => {
       clearWatch(watchId.current);
       watchId.current = null;
-    };
-  }, []);
-
-  // One banner, on the result screen only, shown after the answer is on
-  // screen - never in front of it.
-  useEffect(() => {
-    void showBanner();
-    return () => {
-      void hideBanner();
     };
   }, []);
 
@@ -271,12 +261,7 @@ export function Result({ trip, driveSide, onFlipDriveSide, onBack }: Props) {
         {saved ? 'Saved ✓' : 'I do this every day'}
       </button>
 
-      {/* The banner is a native overlay, so this only reserves space for it. */}
-      {bannerPossible ? (
-        <div className="ad-spacer" />
-      ) : (
-        <div className="ad">Ad banner · 320×50 (native only)</div>
-      )}
+      <div className="ad">Ad slot · 320×50</div>
     </>
   );
 }
