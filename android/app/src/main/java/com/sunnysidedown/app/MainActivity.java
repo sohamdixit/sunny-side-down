@@ -6,6 +6,8 @@ import android.webkit.WebView;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.webkit.WebSettingsCompat;
+import androidx.webkit.WebViewFeature;
 
 import com.getcapacitor.BridgeActivity;
 
@@ -27,6 +29,17 @@ public class MainActivity extends BridgeActivity {
         super.onCreate(savedInstanceState);
 
         final WebView webView = getBridge().getWebView();
+
+        // The page themes itself (it goes dark at night based on the sun, not on
+        // the system setting), so the platform must not also darken it. Skins
+        // like MIUI apply forced dark aggressively, and darkening an already-dark
+        // page a second time leaves it unreadable - black on black.
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.ALGORITHMIC_DARKENING)) {
+            WebSettingsCompat.setAlgorithmicDarkeningAllowed(webView.getSettings(), false);
+        } else if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {
+            // Pre-API 33 path - which is the Android 10 era where this bites.
+            WebSettingsCompat.setForceDark(webView.getSettings(), WebSettingsCompat.FORCE_DARK_OFF);
+        }
 
         ViewCompat.setOnApplyWindowInsetsListener(webView, (view, windowInsets) -> {
             Insets bars = windowInsets.getInsets(
