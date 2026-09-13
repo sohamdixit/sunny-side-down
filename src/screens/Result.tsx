@@ -261,7 +261,6 @@ export function Result({ trip, driveSide, onFlipDriveSide, onBack }: Props) {
         {saved ? 'Saved ✓' : 'I do this every day'}
       </button>
 
-      <div className="ad">Ad slot · 320×50</div>
     </>
   );
 }
