@@ -18,6 +18,8 @@
   --track: #eadfcc;
   --glass: #e6eef3;
   --tyre: #4a4034;
+  --safe-top: 0px;
+  --safe-bottom: 0px;
   --display: 'Bricolage Grotesque', 'Avenir Next', 'Trebuchet MS', sans-serif;
 }
 
@@ -47,7 +49,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 22px 20px 16px;
+  padding: calc(22px + var(--safe-top)) 20px calc(16px + var(--safe-bottom));
   transition: background 0.5s;
 }
 
