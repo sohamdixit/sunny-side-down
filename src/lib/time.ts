@@ -1,40 +1,33 @@
-/** IST is UTC+5:30 with no DST, so a fixed offset is safe. */
-const IST_OFFSET_MIN = 330;
-
-/** Today's absolute instant for a given IST wall-clock time. */
-export function istToday(hh: number, mm: number): Date {
-  const now = new Date();
-  const shift = (IST_OFFSET_MIN + now.getTimezoneOffset()) * 60000;
-  const ist = new Date(now.getTime() + shift);
-  ist.setHours(hh, mm, 0, 0);
-  return new Date(ist.getTime() - shift);
+/** Today's absolute instant for a device-local wall-clock time. */
+export function todayAt(hh: number, mm: number): Date {
+  const d = new Date();
+  d.setHours(hh, mm, 0, 0);
+  return d;
 }
 
-/** Trips are India-first: display clock times in IST regardless of device timezone. */
-export function fmtIST(d: Date): string {
-  return d.toLocaleTimeString('en-IN', {
-    hour: 'numeric',
-    minute: '2-digit',
-    timeZone: 'Asia/Kolkata',
-  });
-}
-
-export function istHHMM(d: Date): string {
-  return d.toLocaleTimeString('en-GB', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-    timeZone: 'Asia/Kolkata',
-  });
+/** Device locale and device timezone — no region is assumed. */
+export function fmtTime(d: Date): string {
+  return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 }
 
 /**
- * Dev/demo helper: `?dep=HH:MM` (IST) pretends the trip leaves at that time
- * today, so daytime verdicts can be tested at night.
+ * 24h "HH:MM" for <input type="time"> and stored commute times. Formatted by
+ * hand rather than via toLocaleTimeString('en-GB', {hour12: false}), which can
+ * emit "24:05" for 00:05 on some ICU builds and break both consumers.
+ */
+export function hhmm(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/**
+ * Dev helper: `?dep=HH:MM` (device-local) pretends the trip leaves at that time
+ * today, so daytime verdicts can be checked at night. Browser only - the
+ * Capacitor WebView loads without a query string, so this is inert on device.
  */
 export function departureOverride(): Date | null {
   const v = new URLSearchParams(window.location.search).get('dep');
   if (!v || !/^\d{1,2}:\d{2}$/.test(v)) return null;
   const [hh, mm] = v.split(':').map(Number);
-  return istToday(hh, mm);
+  return todayAt(hh, mm);
 }

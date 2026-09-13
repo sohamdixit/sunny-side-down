@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Sunny Side Down</string>
+    <string name="title_activity_main">Sunny Side Down</string>
+    <string name="package_name">com.sunnysidedown.app</string>
+    <string name="custom_url_scheme">com.sunnysidedown.app</string>
+</resources>

@@ -1,17 +1,32 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Trip } from '../App';
-import { computeExposure, verdict, type SeatId } from '../lib/exposure';
+import {
+  computeExposure,
+  frontPassengerSide,
+  verdict,
+  MODE_LABELS,
+  type DriveSide,
+  type SeatId,
+} from '../lib/exposure';
 import { progressAlong } from '../lib/geo';
 import { addCommute } from '../lib/store';
-import { fmtIST as fmtTime, istHHMM } from '../lib/time';
+import { watchPosition, clearWatch, type GeoFailure, type WatchHandle } from '../lib/location';
+import { fmtTime, hhmm } from '../lib/time';
 import { BackIcon, SunIcon, SwapIcon, ClockIcon, CheckBadge, WheelIcon } from '../icons';
 
+/** Kept plain on purpose: this is the answer, it should read at a glance. */
 const SEAT_NAMES: Record<SeatId, string> = {
-  fl: 'Front left',
+  fp: 'Front passenger',
   rl: 'Rear left',
   rr: 'Rear right',
 };
 
+const TRACK_TROUBLE: Record<GeoFailure, string> = {
+  denied: "Can't follow along without location.",
+  disabled: 'Turn on location to follow along.',
+  timeout: 'Lost your signal for a moment.',
+  unsupported: "This device won't share its location.",
+};
 
 function seatColor(pct: number) {
   if (pct >= 45) return 'var(--sun-seat)';
@@ -19,13 +34,21 @@ function seatColor(pct: number) {
   return 'var(--sage-soft)';
 }
 
-export function Result({ trip, onBack }: { trip: Trip; onBack: () => void }) {
+interface Props {
+  trip: Trip;
+  driveSide: DriveSide;
+  onFlipDriveSide: () => void;
+  onBack: () => void;
+}
+
+export function Result({ trip, driveSide, onFlipDriveSide, onBack }: Props) {
   const [offsetMin, setOffsetMin] = useState(0);
   const [selected, setSelected] = useState<SeatId>('rl');
   const [progress, setProgress] = useState<number | null>(null);
   const [tracking, setTracking] = useState(false);
+  const [trackTrouble, setTrackTrouble] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
-  const watchId = useRef<number | null>(null);
+  const watchId = useRef<WatchHandle | null>(null);
 
   const departure = useMemo(
     () => new Date(trip.departure.getTime() + offsetMin * 60000),
@@ -33,58 +56,66 @@ export function Result({ trip, onBack }: { trip: Trip; onBack: () => void }) {
   );
 
   const exp = useMemo(
-    () => computeExposure(trip.route.coords, trip.route.durationSec, departure, trip.mode),
-    [trip, departure],
+    () => computeExposure(trip.route.coords, trip.route.durationSec, departure, trip.mode, driveSide),
+    [trip, departure, driveSide],
   );
 
-  const v = verdict(exp, trip.mode);
+  const v = verdict(exp, trip.mode, driveSide);
   const arrival = new Date(departure.getTime() + exp.durationSec * 1000);
   const mid = new Date(departure.getTime() + exp.durationSec * 500);
   const mins = Math.round(exp.durationSec / 60);
   const sunnySide = exp.seats.rr.sunSeconds >= exp.seats.rl.sunSeconds ? 'right' : 'left';
+  const fpOnLeft = frontPassengerSide(driveSide) === 'L';
 
   useEffect(() => {
     if (v.best !== 'either') setSelected(v.best);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // A seat that no longer exists (auto has no front passenger) can't stay selected.
+  useEffect(() => {
+    if (trip.mode !== 'car' && selected === 'fp') setSelected('rl');
+  }, [trip.mode, selected]);
+
   useEffect(() => {
     return () => {
-      if (watchId.current !== null) navigator.geolocation.clearWatch(watchId.current);
+      clearWatch(watchId.current);
+      watchId.current = null;
     };
   }, []);
 
-  function toggleTracking() {
+  async function toggleTracking() {
     if (tracking) {
-      if (watchId.current !== null) navigator.geolocation.clearWatch(watchId.current);
+      clearWatch(watchId.current);
       watchId.current = null;
       setTracking(false);
       setProgress(null);
       return;
     }
-    if (!navigator.geolocation) return;
-    watchId.current = navigator.geolocation.watchPosition(
-      (p) =>
-        setProgress(
-          progressAlong(trip.route.coords, { lat: p.coords.latitude, lon: p.coords.longitude }),
-        ),
-      () => setTracking(false),
-      { enableHighAccuracy: true, maximumAge: 5000 },
-    );
     setTracking(true);
+    setTrackTrouble(null);
+    const handle = await watchPosition(
+      (pos) => setProgress(progressAlong(trip.route.coords, pos)),
+      (reason) => {
+        setTracking(false);
+        setTrackTrouble(TRACK_TROUBLE[reason]);
+      },
+    );
+    if (handle) watchId.current = handle;
+    else setTracking(false);
   }
 
   const summary = exp.night
-    ? 'Sun’s down for this trip — sit anywhere.'
+    ? 'Sit literally anywhere.'
     : v.side === 'either'
-      ? 'Both sides are about the same today — sit anywhere.'
-      : `Shadiest today: ${SEAT_NAMES[v.best as SeatId].toLowerCase()} · tap a seat to compare`;
+      ? 'It’s a draw. Sit wherever you like.'
+      : `${SEAT_NAMES[v.best as SeatId]} wins. Tap any seat to compare.`;
 
   const flipNote = exp.night
-    ? 'No sun to dodge on this one.'
+    ? 'Nothing to dodge tonight.'
     : exp.flipAtSec !== null
-      ? `Sun switches sides about ${Math.round(exp.flipAtSec / 60)} min in.`
-      : 'The sun stays on one side for this whole route.';
+      ? `The sun swaps sides ${Math.round(exp.flipAtSec / 60)} min in. Swap with it.`
+      : 'The sun sticks to one side the whole way.';
 
   const seatEl = (id: SeatId) => (
     <button
@@ -98,6 +129,15 @@ export function Result({ trip, onBack }: { trip: Trip; onBack: () => void }) {
     </button>
   );
 
+  const driverCell = (
+    <div className="seat driver" key="driver">
+      <WheelIcon />
+      <div className="tag">DRIVER</div>
+    </div>
+  );
+  // An auto-rickshaw has no front passenger seat to offer.
+  const frontCell = trip.mode === 'car' ? seatEl('fp') : <div key="empty" />;
+
   return (
     <>
       <div className="back-row">
@@ -109,7 +149,7 @@ export function Result({ trip, onBack }: { trip: Trip; onBack: () => void }) {
             {trip.from.name} → {trip.to.name}
           </div>
           <div className="route-sub">
-            ~{mins} min · leaving {fmtTime(departure)} · {trip.mode === 'cab' ? 'Cab' : 'Auto'}
+            ~{mins} min · leaving {fmtTime(departure)} · {MODE_LABELS[trip.mode]}
           </div>
         </div>
       </div>
@@ -117,13 +157,18 @@ export function Result({ trip, onBack }: { trip: Trip; onBack: () => void }) {
       <div className="card seatmap-card">
         <div className="car-wrap">
           <div className="car">
-            {trip.mode === 'cab' ? seatEl('fl') : <div />}
-            <div className="seat driver">
-              <WheelIcon />
-              <div className="tag">DRIVER</div>
+            <span className="wheel front near" />
+            <span className="wheel front off" />
+            <span className="wheel rear near" />
+            <span className="wheel rear off" />
+            <div className="windscreen" />
+            <div className="seats">
+              {fpOnLeft ? frontCell : driverCell}
+              {fpOnLeft ? driverCell : frontCell}
+              {seatEl('rl')}
+              {seatEl('rr')}
             </div>
-            {seatEl('rl')}
-            {seatEl('rr')}
+            <div className="rear-window" />
           </div>
           {!exp.night && (
             <div className={`sun-badge ${sunnySide}`}>
@@ -133,6 +178,9 @@ export function Result({ trip, onBack }: { trip: Trip; onBack: () => void }) {
           )}
         </div>
         <div className="summary">{summary}</div>
+        <button className="linkish drive-flip" onClick={onFlipDriveSide}>
+          Driver sits on the {driveSide} · tap to flip
+        </button>
       </div>
 
       <div className="card stack">
@@ -164,15 +212,16 @@ export function Result({ trip, onBack }: { trip: Trip; onBack: () => void }) {
         <button className="linkish" onClick={toggleTracking}>
           {tracking
             ? progress !== null
-              ? `Tracking — ${Math.round(progress * 100)}% of the way there · stop`
-              : 'Waiting for GPS… · stop'
-            : 'Track my trip live'}
+              ? `Following you — ${Math.round(progress * 100)}% there · stop`
+              : 'Looking for you… · stop'
+            : 'Follow me along'}
         </button>
+        {trackTrouble && <div className="note">{trackTrouble}</div>}
       </div>
 
       <div className="card stack">
         <div className="dep-head">
-          <div className="label">DEPARTURE</div>
+          <div className="label">LEAVING AT</div>
           <div className="dep-time">{fmtTime(departure)}</div>
         </div>
         <input
@@ -190,7 +239,7 @@ export function Result({ trip, onBack }: { trip: Trip; onBack: () => void }) {
         </div>
         <div className="note">
           <ClockIcon />
-          Drag to see how leaving earlier or later changes the shady side.
+          Drag to watch the sun move.
         </div>
       </div>
 
@@ -204,12 +253,12 @@ export function Result({ trip, onBack }: { trip: Trip; onBack: () => void }) {
             from: trip.from,
             to: trip.to,
             mode: trip.mode,
-            departAt: istHHMM(trip.departure),
+            departAt: hhmm(trip.departure),
           });
           setSaved(true);
         }}
       >
-        {saved ? 'Saved to commutes ✓' : 'Save as a commute'}
+        {saved ? 'Saved ✓' : 'I do this every day'}
       </button>
 
       <div className="ad">Ad banner · 320×50</div>

@@ -1,5 +1,6 @@
 import type { Place } from './api';
-import type { Mode } from './exposure';
+import type { DriveSide, Mode } from './exposure';
+import { detectDriveSide } from './exposure';
 
 export interface Recent {
   place: Place;
@@ -12,9 +13,19 @@ export interface Commute {
   from: Place;
   to: Place;
   mode: Mode;
-  /** "HH:MM" 24h departure time it should be checked for. */
+  /** "HH:MM" 24h DEVICE-LOCAL departure time it should be checked for. */
   departAt: string;
 }
+
+/**
+ * v2: the v1 records meant something different - `mode` was 'cab' (now 'car',
+ * and a stale 'cab' would silently be scored as an auto-rickshaw) and
+ * `departAt` meant IST rather than device-local. Bumping the key drops them
+ * instead of reinterpreting them wrongly.
+ */
+const RECENTS_KEY = 'ssd.recents.v2';
+const COMMUTES_KEY = 'ssd.commutes.v2';
+const DRIVE_SIDE_KEY = 'ssd.driveSide';
 
 function read<T>(key: string, fallback: T): T {
   try {
@@ -33,19 +44,32 @@ function write(key: string, value: unknown) {
   }
 }
 
-export const getRecents = () => read<Recent[]>('ssd.recents', []);
+export const getRecents = () => read<Recent[]>(RECENTS_KEY, []);
 
 export function addRecent(r: Recent) {
-  const rest = getRecents().filter((x) => x.place.name !== r.place.name);
-  write('ssd.recents', [r, ...rest].slice(0, 4));
+  // Dedupe on rounded coordinates, not name: "Station" and "Main Street"
+  // collide across cities once the app is used outside one metro.
+  const key = (p: Place) => `${p.pos.lat.toFixed(3)},${p.pos.lon.toFixed(3)}`;
+  const rest = getRecents().filter((x) => key(x.place) !== key(r.place));
+  write(RECENTS_KEY, [r, ...rest].slice(0, 4));
 }
 
-export const getCommutes = () => read<Commute[]>('ssd.commutes', []);
+export const getCommutes = () => read<Commute[]>(COMMUTES_KEY, []);
 
 export function addCommute(c: Commute) {
-  write('ssd.commutes', [...getCommutes(), c]);
+  write(COMMUTES_KEY, [...getCommutes(), c]);
 }
 
 export function removeCommute(id: string) {
-  write('ssd.commutes', getCommutes().filter((c) => c.id !== id));
+  write(COMMUTES_KEY, getCommutes().filter((c) => c.id !== id));
+}
+
+/** Stored override if the user has flipped it, else a guess from the timezone. */
+export function getDriveSide(): DriveSide {
+  const stored = read<DriveSide | null>(DRIVE_SIDE_KEY, null);
+  return stored === 'left' || stored === 'right' ? stored : detectDriveSide();
+}
+
+export function setDriveSide(side: DriveSide) {
+  write(DRIVE_SIDE_KEY, side);
 }

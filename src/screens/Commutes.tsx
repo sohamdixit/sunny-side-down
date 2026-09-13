@@ -1,12 +1,20 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { fetchRoute } from '../lib/api';
-import { computeExposure, verdict } from '../lib/exposure';
+import { computeExposure, verdict, MODE_LABELS, type DriveSide } from '../lib/exposure';
 import { getCommutes, removeCommute, type Commute } from '../lib/store';
-import { istToday } from '../lib/time';
+import { todayAt, fmtTime } from '../lib/time';
 
-type ChipState = 'checking' | 'LEFT' | 'RIGHT' | 'EITHER' | 'failed';
+type ChipState = 'checking' | 'LEFT' | 'RIGHT' | 'ANY' | 'failed';
 
-function CommuteCard({ c, onRemove }: { c: Commute; onRemove: () => void }) {
+function CommuteCard({
+  c,
+  driveSide,
+  onRemove,
+}: {
+  c: Commute;
+  driveSide: DriveSide;
+  onRemove: () => void;
+}) {
   const [chip, setChip] = useState<ChipState>('checking');
 
   useEffect(() => {
@@ -14,11 +22,11 @@ function CommuteCard({ c, onRemove }: { c: Commute; onRemove: () => void }) {
     (async () => {
       try {
         const [h, m] = c.departAt.split(':').map(Number);
-        const dep = istToday(h, m);
+        const dep = todayAt(h, m);
         const route = await fetchRoute(c.from.pos, c.to.pos, dep);
-        const exp = computeExposure(route.coords, route.durationSec, dep, c.mode);
-        const v = verdict(exp, c.mode);
-        if (live) setChip(v.side === 'either' ? 'EITHER' : v.side === 'left' ? 'LEFT' : 'RIGHT');
+        const exp = computeExposure(route.coords, route.durationSec, dep, c.mode, driveSide);
+        const v = verdict(exp, c.mode, driveSide);
+        if (live) setChip(v.side === 'either' ? 'ANY' : v.side === 'left' ? 'LEFT' : 'RIGHT');
       } catch {
         if (live) setChip('failed');
       }
@@ -26,10 +34,9 @@ function CommuteCard({ c, onRemove }: { c: Commute; onRemove: () => void }) {
     return () => {
       live = false;
     };
-  }, [c]);
+  }, [c, driveSide]);
 
-  const hh = Number(c.departAt.split(':')[0]);
-  const ampm = `${((hh + 11) % 12) + 1}:${c.departAt.split(':')[1]} ${hh >= 12 ? 'PM' : 'AM'}`;
+  const [h, m] = c.departAt.split(':').map(Number);
 
   return (
     <div className="card commute-card">
@@ -37,34 +44,34 @@ function CommuteCard({ c, onRemove }: { c: Commute; onRemove: () => void }) {
         <div className="who">
           <div className="name">{c.label}</div>
           <div className="detail">
-            Daily · {ampm} · {c.mode === 'cab' ? 'Cab' : 'Auto'}
+            Daily · {fmtTime(todayAt(h, m))} · {MODE_LABELS[c.mode]}
           </div>
         </div>
-        <div className={`chip${chip === 'EITHER' ? ' sage' : ''}`}>
-          {chip === 'checking' ? '…' : chip === 'failed' ? 'retry later' : chip}
+        <div className={`chip${chip === 'ANY' ? ' sage' : ''}`}>
+          {chip === 'checking' ? '…' : chip === 'failed' ? 'hmm' : chip}
         </div>
       </div>
       <button className="linkish" style={{ alignSelf: 'flex-start' }} onClick={onRemove}>
-        Remove
+        Forget it
       </button>
     </div>
   );
 }
 
-export function Commutes({ nav }: { nav: ReactNode }) {
+export function Commutes({ driveSide, nav }: { driveSide: DriveSide; nav: ReactNode }) {
   const [commutes, setCommutes] = useState(getCommutes());
 
   return (
     <>
       <div>
-        <h1 style={{ fontSize: 30 }}>Commutes</h1>
-        <div className="sub">Checked at their departure time — the answer changes with the season.</div>
+        <h1 style={{ fontSize: 30 }}>Regulars</h1>
+        <div className="sub">Rechecked every day — the sun keeps moving on you.</div>
       </div>
 
       {commutes.length === 0 && (
         <div className="card">
           <div className="sub">
-            No saved commutes yet. Run a trip and tap “Save as a commute” on the result screen.
+            Nothing here yet. Save a trip and it’ll turn up, freshly checked each morning.
           </div>
         </div>
       )}
@@ -73,6 +80,7 @@ export function Commutes({ nav }: { nav: ReactNode }) {
         <CommuteCard
           key={c.id}
           c={c}
+          driveSide={driveSide}
           onRemove={() => {
             removeCommute(c.id);
             setCommutes(getCommutes());

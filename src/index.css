@@ -16,6 +16,8 @@
   --sage: #7c8a5a;
   --sage-soft: #eaf0dd;
   --track: #eadfcc;
+  --glass: #e6eef3;
+  --tyre: #4a4034;
   --display: 'Bricolage Grotesque', 'Avenir Next', 'Trebuchet MS', sans-serif;
 }
 
@@ -36,14 +38,86 @@ body {
 }
 
 .phone {
+  position: relative;
   width: 100%;
   max-width: 430px;
   min-height: 100dvh;
   background: var(--bg);
+  color: var(--ink);
   display: flex;
   flex-direction: column;
   gap: 16px;
   padding: 22px 20px 16px;
+  transition: background 0.5s;
+}
+
+.phone.night {
+  --bg: #201a12;
+  --card: #2b2318;
+  --ink: #f3ead9;
+  --muted: #a3937c;
+  --muted-2: #8d7d66;
+  --soft: #c9b99f;
+  --line: #3a3122;
+  --line-2: #352c1d;
+  --accent: #e07b00;
+  --accent-deep: #f2a33c;
+  --accent-soft: #3d2c12;
+  --shade: #3a3122;
+  --track: #3a3122;
+  --sage-soft: #2d3421;
+  --sage: #aabf8a;
+  --sun-seat: #8a5f23;
+  --glass: #2f3a40;
+  --tyre: #15110c;
+}
+
+.phone.night .btn-primary:disabled {
+  background: #4a3f2c;
+  color: #8d7d66;
+}
+
+.phone.night > :not(.night-bg) {
+  position: relative;
+  z-index: 1;
+}
+
+.night-bg {
+  position: absolute;
+  z-index: 0;
+  bottom: 96px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.night-bg svg {
+  width: 240px;
+  height: auto;
+}
+
+.leaving {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Reads as tappable without shouting: the departure time is editable at any
+   time of day, not only at night. */
+.leaving-btn {
+  border: 1px solid var(--line);
+  background: var(--card);
+  border-radius: 12px;
+  padding: 8px 13px;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--soft);
+  cursor: pointer;
 }
 
 .brand {
@@ -76,6 +150,38 @@ h1 {
   gap: 8px;
   font-size: 13px;
   color: var(--muted);
+}
+
+.from-btn {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.from-btn .change {
+  color: var(--accent-deep);
+  font-weight: 600;
+  margin-left: 4px;
+}
+
+.top-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  border: 1px solid var(--line);
+  background: var(--card);
+  border-radius: 14px;
+  padding: 12px 16px;
+  font: inherit;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--accent-deep);
+  cursor: pointer;
 }
 
 .card {
@@ -136,6 +242,7 @@ h1 {
   width: 100%;
   text-align: left;
   font: inherit;
+  color: inherit;
 }
 
 .suggestion:hover {
@@ -219,6 +326,7 @@ h1 {
   padding: 13px 16px;
   cursor: pointer;
   font: inherit;
+  color: inherit;
   text-align: left;
   width: 100%;
 }
@@ -322,18 +430,54 @@ h1 {
 }
 
 .car {
-  width: 210px;
-  background: #fdfbf6;
-  border: 2px solid #d8ccb6;
-  border-radius: 44px 44px 30px 30px;
-  padding: 18px 16px 16px;
+  position: relative;
+  width: 212px;
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: 58px 58px 46px 46px;
+  padding: 12px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Windscreen and rear glass do the work of saying "this is a car, and that
+   end is the front" - without them the seat grid reads as an abstract 2x2. */
+.windscreen {
+  height: 40px;
+  margin: -2px -2px 0;
+  border-radius: 48px 48px 12px 12px;
+  background: var(--glass);
+}
+
+.rear-window {
+  height: 20px;
+  border-radius: 10px;
+  background: var(--glass);
+}
+
+.seats {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
+.wheel {
+  position: absolute;
+  width: 11px;
+  height: 32px;
+  border-radius: 6px;
+  background: var(--tyre);
+}
+
+.wheel.front { top: 54px; }
+.wheel.rear { bottom: 46px; }
+.wheel.near { left: -7px; }
+.wheel.off { right: -7px; }
+
 .seat {
-  height: 92px;
+  color: inherit;
+  height: 78px;
   border-radius: 14px;
   border: 2.5px solid transparent;
   display: flex;
@@ -495,6 +639,52 @@ input[type='range'] {
   justify-content: center;
   font-size: 12px;
   color: var(--muted-2);
+}
+
+.night-title {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.time-input {
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--accent-deep);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 5px 9px;
+  background: var(--card);
+  margin-left: auto;
+}
+
+.notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--accent-soft);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-size: 13px;
+  color: var(--soft);
+}
+
+.notice .linkish {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.drive-flip {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted-2);
+}
+
+.recent:disabled,
+.btn-primary:disabled {
+  opacity: 0.55;
+  cursor: default;
 }
 
 .commute-card {

@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="800" height="800">
+  <defs>
+    <!-- Drop shadow for the egg white to give it depth -->
+    <filter id="egg-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#000000" flood-opacity="0.3"/>
+    </filter>
+    <!-- Vibrant gradient for the sunny yolk -->
+    <linearGradient id="sun-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FBBF24" />
+      <stop offset="100%" stop-color="#EA580C" />
+    </linearGradient>
+  </defs>
+
+  <!-- App Icon Background (Dark slate/shade to make the design pop) -->
+  
+
+  <!-- The Egg White (Representing the safe/cool zone) -->
+  <g transform="translate(100,100) scale(0.66) translate(-100,-102.5)"><path id="egg-white" d="M100,25 C150,25 175,65 175,120 C175,165 135,180 100,180 C65,180 25,165 25,120 C25,65 50,25 100,25 Z" fill="#F8FAFC" filter="url(#egg-shadow)" />
+
+  <!-- The Yolk / Sun (Positioned low: 'Sunny Side Down') -->
+  <circle id="yolk-sun" cx="85" cy="153" r="24" fill="url(#sun-grad)" />
+
+  <!-- Minimalist Car Seat Silhouette -->
+  <g id="car-seat" fill="#1E293B">
+    <!-- Headrest -->
+    <rect x="103" y="45" width="22" height="26" rx="8" />
+    <!-- Backrest -->
+    <path d="M 109 79 C 121 79, 127 87, 123 99 L 113 129 L 93 129 L 102 87 C 103 81, 109 79, 109 79 Z" />
+    <!-- Seat Cushion -->
+    <path d="M 60 115 L 108 115 L 113 137 L 60 137 C 45 137, 45 115, 60 115 Z" />
+  </g>
+</g></svg>

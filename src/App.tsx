@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { Place, Route } from './lib/api';
-import { fetchRoute } from './lib/api';
-import type { Mode } from './lib/exposure';
-import { addRecent } from './lib/store';
+import { fetchRoute, friendlyError } from './lib/api';
+import type { DriveSide, Mode } from './lib/exposure';
+import { addRecent, getDriveSide, setDriveSide as persistDriveSide } from './lib/store';
 import { departureOverride } from './lib/time';
+import { isNight } from './lib/sun';
+import { getCurrentPosition, type GeoFailure } from './lib/location';
 import { Home } from './screens/Home';
 import { Result } from './screens/Result';
 import { Commutes } from './screens/Commutes';
@@ -17,39 +19,61 @@ export interface Trip {
   departure: Date;
 }
 
-const DEFAULT_FROM: Place = {
-  name: 'HSR Layout (default)',
-  detail: 'Bengaluru',
-  pos: { lat: 12.9116, lon: 77.6389 },
-};
+/** 'locating' on boot; a failure reason once we know we can't self-locate. */
+export type LocStatus = 'idle' | 'locating' | GeoFailure;
 
 type Screen = { name: 'home' } | { name: 'commutes' } | { name: 'result'; trip: Trip };
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>({ name: 'home' });
-  const [from, setFrom] = useState<Place>(DEFAULT_FROM);
-  const [mode, setMode] = useState<Mode>('cab');
+  // No placeholder origin. A default city would be a lie, and it silently sent
+  // every sun calculation to the wrong hemisphere when geolocation failed.
+  const [from, setFrom] = useState<Place | null>(null);
+  const [locStatus, setLocStatus] = useState<LocStatus>('locating');
+  const [mode, setMode] = useState<Mode>('car');
+  const [driveSide, setDriveSideState] = useState<DriveSide>(getDriveSide);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [plannedDep, setPlannedDep] = useState<Date | null>(null);
 
-  useEffect(() => {
-    if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(
-      (p) =>
+  const effectiveDep = plannedDep ?? departureOverride() ?? new Date();
+  // null = we don't know where they are yet, which is neither day nor night.
+  const night: boolean | null = from ? isNight(effectiveDep, from.pos) : null;
+
+  const locate = useCallback(() => {
+    setLocStatus('locating');
+    void getCurrentPosition().then((r) => {
+      if (r.ok) {
         setFrom({
-          name: 'Current location',
-          detail: '',
-          pos: { lat: p.coords.latitude, lon: p.coords.longitude },
-        }),
-      () => {
-        /* denied or unavailable - keep the labeled default */
-      },
-      { timeout: 8000 },
-    );
+          name: 'Where you are',
+          // Showing coordinates makes a WRONG fix visible instead of silent.
+          detail: `${r.pos.lat.toFixed(3)}, ${r.pos.lon.toFixed(3)}`,
+          pos: r.pos,
+        });
+        setLocStatus('idle');
+      } else {
+        setLocStatus(r.reason);
+      }
+    });
   }, []);
 
-  async function go(to: Place, fromOverride?: Place, departure = departureOverride() ?? new Date()) {
+  useEffect(() => {
+    locate();
+  }, [locate]);
+
+  function flipDriveSide() {
+    const next: DriveSide = driveSide === 'left' ? 'right' : 'left';
+    setDriveSideState(next);
+    persistDriveSide(next);
+  }
+
+  async function go(
+    to: Place,
+    fromOverride?: Place,
+    departure = plannedDep ?? departureOverride() ?? new Date(),
+  ) {
     const origin = fromOverride ?? from;
+    if (!origin) return;
     setBusy(true);
     setError(null);
     try {
@@ -57,7 +81,8 @@ export default function App() {
       addRecent({ place: to, mode });
       setScreen({ name: 'result', trip: { from: origin, to, mode, route, departure } });
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'something went wrong');
+      console.error('route fetch failed:', e);
+      setError(friendlyError(e));
     } finally {
       setBusy(false);
     }
@@ -77,16 +102,22 @@ export default function App() {
         onClick={() => setScreen({ name: 'commutes' })}
       >
         <CommuteIcon />
-        Commutes
+        Regulars
       </button>
     </nav>
   );
 
   return (
-    <div className="phone">
+    <div className={night === true ? 'phone night' : 'phone'}>
       {screen.name === 'home' && (
         <Home
           from={from}
+          setFrom={setFrom}
+          onLocate={locate}
+          locStatus={locStatus}
+          night={night}
+          plannedDep={plannedDep}
+          setPlannedDep={setPlannedDep}
           mode={mode}
           setMode={setMode}
           busy={busy}
@@ -95,9 +126,14 @@ export default function App() {
           nav={nav}
         />
       )}
-      {screen.name === 'commutes' && <Commutes nav={nav} />}
+      {screen.name === 'commutes' && <Commutes driveSide={driveSide} nav={nav} />}
       {screen.name === 'result' && (
-        <Result trip={screen.trip} onBack={() => setScreen({ name: 'home' })} />
+        <Result
+          trip={screen.trip}
+          driveSide={driveSide}
+          onFlipDriveSide={flipDriveSide}
+          onBack={() => setScreen({ name: 'home' })}
+        />
       )}
     </div>
   );

@@ -12,6 +12,33 @@ export const SunIcon = ({ size = 24, color = '#E07B00' }: { size?: number; color
   </svg>
 );
 
+/** Cute baked-in night graphic: the sun asleep on a little cloud, zzz and all. */
+export const SleepingSun = () => (
+  <svg width="180" height="132" viewBox="0 0 180 132" fill="none">
+    <g stroke="#8a5f23" strokeWidth="4" strokeLinecap="round" opacity="0.7">
+      <line x1="90" y1="19" x2="90" y2="9" />
+      <line x1="134" y1="63" x2="144" y2="63" />
+      <line x1="46" y1="63" x2="36" y2="63" />
+      <line x1="121" y1="32" x2="128" y2="25" />
+      <line x1="59" y1="32" x2="52" y2="25" />
+      <line x1="121" y1="94" x2="128" y2="101" />
+      <line x1="59" y1="94" x2="52" y2="101" />
+    </g>
+    <ellipse cx="90" cy="108" rx="46" ry="11" fill="#3b3325" />
+    <ellipse cx="52" cy="104" rx="16" ry="8" fill="#463d2b" />
+    <ellipse cx="126" cy="104" rx="18" ry="8" fill="#463d2b" />
+    <circle cx="90" cy="63" r="36" fill="#e8a13c" />
+    <path d="M 72 60 Q 77 66 82 60" stroke="#7a4d12" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+    <path d="M 98 60 Q 103 66 108 60" stroke="#7a4d12" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+    <path d="M 84 76 Q 90 80 96 76" stroke="#7a4d12" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+    <circle cx="70" cy="70" r="5" fill="#d97b28" opacity="0.55" />
+    <circle cx="110" cy="70" r="5" fill="#d97b28" opacity="0.55" />
+    <text x="132" y="40" fontSize="20" fontWeight="700" fill="#c9a25e" fontFamily="'Bricolage Grotesque', sans-serif">z</text>
+    <text x="146" y="27" fontSize="15" fontWeight="700" fill="#b8934e" fontFamily="'Bricolage Grotesque', sans-serif">z</text>
+    <text x="157" y="17" fontSize="11" fontWeight="700" fill="#a5823f" fontFamily="'Bricolage Grotesque', sans-serif">z</text>
+  </svg>
+);
+
 export const SearchIcon = () => (
   <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#9A8B74" strokeWidth="1.8" strokeLinecap="round">
     <circle cx="9" cy="9" r="5.5" />
