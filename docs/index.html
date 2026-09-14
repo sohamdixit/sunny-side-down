@@ -60,6 +60,9 @@
   .points { list-style: none; padding: 0; margin: 1.5rem 0 0; max-width: 36rem; }
   .points li { padding: .7rem 0 .7rem 1.9rem; position: relative; border-bottom: 1px solid var(--line); }
   .points li:last-child { border-bottom: 0; }
+  .steps { max-width: 36rem; padding-left: 1.3rem; margin: 1.5rem 0 0; }
+  .steps li { padding: .55rem 0; }
+
   .points li::before { content: ""; position: absolute; left: 0; top: 1.15rem;
                        width: 10px; height: 10px; border-radius: 3px; background: var(--sun); }
 
@@ -82,13 +85,14 @@
 
   <div class="hero">
     <h1>Find the seat the sun can&rsquo;t reach.</h1>
-    <p class="lede">The sun only shines on one side of the car. Sit on the wrong
-    side and you spend the whole journey squinting, sweating, and slowly cooking
-    through the window. This tells you which side that is &mdash; before you get in.</p>
-    <a class="cta" href="mailto:soham.dixit95+ssup@gmail.com?subject=Sunny%20Side%20Down%20—%20test%20invite&body=Hello%2C%20please%20add%20this%20Google%20account%20to%20the%20test%3A%20">Ask for a test invite &rarr;</a>
-    <span class="cta-note">Free, on Android. It&rsquo;s in <strong>closed testing</strong>, so
-    access is by invitation &mdash; send me the Google account you use on your phone and
-    I&rsquo;ll add you. You&rsquo;ll get a link back that installs it from Play.</span>
+    <p class="lede">You open the car door, drop in, and the seat has been baking
+    the whole time it waited for you. One side of the car gets that. The other
+    stays shaded. Tell Sunny Side Down where you&rsquo;re going and it works out
+    which is which &mdash; before you pick a door.</p>
+    <a class="cta" href="https://groups.google.com/g/closed-testing-ssd">Join the testers group &rarr;</a>
+    <span class="cta-note">Free, on Android. Testing is open to anyone &mdash;
+    ask to join the group above, then <a href="https://play.google.com/apps/testing/com.sunnysidedown.app">opt in on Google
+    Play</a> and install. The group is what makes that second link work.</span>
   </div>
 
   <section>
@@ -137,15 +141,19 @@
   </section>
 
   <section>
-    <h2>It&rsquo;s in closed testing</h2>
-    <p>Which means it works, but it&rsquo;s young, and the group trying it is
-    small on purpose. If something looks wrong &mdash; a verdict that seems
-    backwards, a place it can&rsquo;t find &mdash; tell me and I&rsquo;ll fix it.</p>
-    <a class="cta" href="mailto:soham.dixit95+ssup@gmail.com?subject=Sunny%20Side%20Down%20—%20test%20invite&body=Hello%2C%20please%20add%20this%20Google%20account%20to%20the%20test%3A%20">Ask for a test invite &rarr;</a>
-    <p style="margin-top:1.25rem;font-size:.95rem;color:var(--muted)">Already on the
-    tester list? <a href="https://play.google.com/apps/testing/com.sunnysidedown.app">Opt
-    in here</a>, then install from Play. That link only works for invited accounts.</p>
-  </section>
+    <h2>Want to try it?</h2>
+    <p>It&rsquo;s in closed testing &mdash; which means it works, but it&rsquo;s
+    young, and the group trying it is small. Anyone can ask to join.</p>
+    <ol class="steps">
+      <li><a href="https://groups.google.com/g/closed-testing-ssd">Ask to join the testers group</a> &mdash; it&rsquo;s
+          open, you just request access.</li>
+      <li>Once you&rsquo;re in, <a href="https://play.google.com/apps/testing/com.sunnysidedown.app">opt in on Google Play</a>
+          and install as normal.</li>
+    </ol>
+    <p style="margin-top:1.25rem;font-size:.95rem;color:var(--muted)">If something
+    looks wrong &mdash; a verdict that seems backwards, a place it can&rsquo;t find
+    &mdash; <a href="mailto:soham.dixit95+ssup@gmail.com">tell me</a> and I&rsquo;ll fix it.</p>
+    </section>
 
   <footer>
     <a href="privacy-policy.html">Privacy policy</a>
